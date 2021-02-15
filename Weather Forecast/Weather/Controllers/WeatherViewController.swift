@@ -13,12 +13,14 @@ class WeatherViewController: UIViewController {
     let cities = [890869,906057,2455920,44418,2459115,638242]
     let weekDays = 6
     var tableView: UITableView!
+    var refreshControl = UIRefreshControl()
     var weathers: [MetaWeatherModel] = []
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         initWeatherView()
+
     }
     
 }
@@ -33,6 +35,18 @@ extension WeatherViewController {
         tableView.register(WeatherTableViewCell.self, forCellReuseIdentifier: String(describing: WeatherTableViewCell.self))
         self.view.addSubview(tableView)
         tableView.fillToSuperView()
+        
+        //添加刷新
+        refreshControl.addTarget(self, action: #selector(refreshWeatherData), for: .valueChanged)
+        refreshControl.attributedTitle = NSAttributedString(string: "drop down to refresh data")
+        tableView.addSubview(refreshControl)
+        
+        refreshWeatherData()
+    }
+    
+    @objc func refreshWeatherData() -> Void {
+        weathers.removeAll()
+        tableView.reloadData()
         
         for cityId in cities {
             autoreleasepool {
@@ -49,11 +63,15 @@ extension WeatherViewController: UITableViewDelegate {
             switch result {
             case .error:
                 print("ERROR: \(result)")
+                DispatchQueue.main.async {
+                    self?.refreshControl.endRefreshing()
+                }
             case .success(let decoded):
 //                self?.weathers.append(decoded)
                 self?.weathers.insert(decoded, at: 0)
                 DispatchQueue.main.async {
                     self?.tableView.reloadData()
+                    self?.refreshControl.endRefreshing()
                 }
             }
         }
